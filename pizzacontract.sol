@@ -235,6 +235,14 @@ contract LocalKorner is Ownership {
         pizzas.pop();
     }
 
+    function getPizzaTypes() external view returns(Pizza[] memory) {
+        return pizzas;
+         }
+    
+    function checkBonusStatus() external view returns(uint) {
+        return orderCount[msg.sender];
+    }
+
     function _freePizza() internal {
            if (orderCount[msg.sender] == 5) {
        require(msg.value == 0, "SURPRISE! You don't have to pay for this order :)");
@@ -260,6 +268,16 @@ contract LocalKorner is Ownership {
             
     }
 
+    function checkMyOrder() external view returns(Order[] memory _pizzaName, uint _amount, uint _amountToPay) {
+      require(orderAmount[msg.sender] > 0 , "Please make an order first.");
+
+        _pizzaName = myPizzaOrder[msg.sender];
+        _amount = orderAmount[msg.sender];
+        _amountToPay = orderAmount[msg.sender] * pizzaPrice;
+
+        return(_pizzaName, _amount, _amountToPay);
+        
+    }
     
     function deleteMyPizzaOrder() external {
       require(orderAmount[msg.sender] > 0 , "Please make an order first.");        
@@ -290,7 +308,10 @@ contract LocalKorner is Ownership {
  
     }
     
-
+    function getContractBalance() external view onlyOwner multiOwner ultimateActivated returns (uint) {
+        return address(this).balance;
+    }
+  
     function adminWithdraw() external onlyOwner multiOwner ultimateActivated returns (bool) {
         (bool sent,) = msg.sender.call{value: address(this).balance}("");
         return sent;
