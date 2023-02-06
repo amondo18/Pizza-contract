@@ -163,13 +163,6 @@ contract LocalKorner is Ownership {
   //counts owners approvals
  // mapping(uint => mapping(address => bool)) approved;
 
-
-  //event KornerOwnership(address owner, string message);
-  //event UltimateOwnership(address ultimateOwner, string message);
-  //event SubmitRequest(address indexed from, string indexed message, uint indexed slot);
-  //event Approved(address indexed owner, uint indexed _requestId);
-  //event AgreedToChange(uint indexed _requestId);
-  //event RevokeApproval(address indexed owner, uint indexed _requestId);
   event OrderSent(uint orderId, address customer, string message);
   event FreePizza(uint orderId, address customer, string message);
 
@@ -177,12 +170,6 @@ contract LocalKorner is Ownership {
   OwnerAccessRequest[] private requests;
   Pizza[] private pizzas;
   Order[] private orders;
-
- 
-//   modifier onlyOwner {
-//      require(owner == msg.sender || isOwner[msg.sender], "You are NOT the owner!");
-//      _;
-//   }
 
    modifier preventDoubleReg {
      require(!isRegistered[msg.sender], "You have already registered!");
