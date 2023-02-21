@@ -1,136 +1,22 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.17;
 
-contract Ownership {
+contract LocalKorner {
 
-  address private owner;
-  address private ultimateOwner;
-  bool isActivated;
-
-  event KornerOwnership(address owner, string message);
-  event UltimateOwnership(address ultimateOwner, string message);
-  event SubmitRequest(address indexed from, string indexed message, uint indexed _id);
-  event Approved(address indexed owner);
-
-
-  //is msg.sender owner
-  mapping(address => bool) isOwner;
-  //owners approvals
-  mapping(address => bool) accessApproved;
-  //request sender grant access
-  mapping(address => bool) canAccess;
-
-  struct OwnerAccessRequest{
-    address from;
-    string request;
-    uint id;
-    bool gotAccess;
-  }
-
-  address[] private owners;
-  OwnerAccessRequest[] private requests;
-
-  modifier onlyOwner {
-      require(owner == msg.sender || isOwner[msg.sender], "not owner!");
-      _;
-   }
-
-  modifier dontUse {
-    require(owners.length >= 2 && isActivated == false, "don't use");
-    _;
-  } 
-
-  modifier ultimateActivated {
-     if(isActivated == true){
-       require(msg.sender == ultimateOwner,
-        "Only one owner.");
-        _;
-     }else{
-       _;
-     }
-   }
-
-  modifier multiOwner {
-    require(owners.length == 1 || msg.sender == ultimateOwner,"Get access from owners.");
-      _;
-    }
-  
-  function setUltimateOwnership(address _ultimateOwner) external onlyOwner multiOwner dontUse {
-      require(_ultimateOwner != address(0), "Can't be zero address!");
-      ultimateOwner = _ultimateOwner;
-      delete owners;
-      owners.push(_ultimateOwner);
-      isActivated = true;
-
-      emit UltimateOwnership(ultimateOwner, "is now the owner!"); 
-    }
-
-  function addOwnership(address _newOwner) external onlyOwner multiOwner ultimateActivated {
-      require(_newOwner != address(0), "Can't be zero address!");
-      owners.push(_newOwner);
-      isOwner[_newOwner] = true;
-    }
-
-  function removeOwnership(address _oldOwner, uint _slotNumber) external onlyOwner multiOwner ultimateActivated{
-      require(_oldOwner != address(0), "Can't be zero address!");
-      owners[_slotNumber] = owners[owners.length - 1];
-      owners.pop();
-      isOwner[_oldOwner] = false;
-     }
-
-  function getOwnerRequests() external view onlyOwner ultimateActivated dontUse returns(OwnerAccessRequest[] memory) {
-      return requests;
-    }
-
-  function submitRequest(address _owner, string memory _message) external onlyOwner ultimateActivated dontUse {
-      requests.push(OwnerAccessRequest({
-        from: _owner,
-        request: _message,
-        id: block.timestamp,
-        gotAccess: false
-      }));
-      emit SubmitRequest(msg.sender, _message, requests.length - 1);
-    }
-
-  function approveRequest() external onlyOwner ultimateActivated dontUse {
-      require(requests.length > 0, "Request needed.");
-      accessApproved[msg.sender] = true;
-      emit Approved(msg.sender);
-    }
-
-  function _getApprovalCount() private view returns(uint count) {
-      for(uint i; i < owners.length; i++) {
-        if(accessApproved[owners[i]]) {
-          count += 1;
-      }
-    }
-  }
-
-  function getAccess() external view onlyOwner ultimateActivated dontUse {
-      require(_getApprovalCount() > owners.length / 2, "Need more approvals.");
-  }
-
-  function getOwners() external view onlyOwner returns(address[] memory) {
-      return owners;
-    }
-  }
-
-contract LocalKorner is Ownership {
-
-
-  address private owner;
-  address private ultimateOwner;
   uint256 private pizzaPrice;
+  address private owner;
+  address private ultimateOwner; 
+  bool isActivated;
   bool private pizzaPayed;
 
 
   struct Pizza{
-      string pizzaName;
-      uint pizzaId;
+    uint pizzaId;
+    string pizzaName;     
   }
   
   struct Order{
-    string pizzaOrderName;
+    uint pizzaId;
     uint pizzaAmount;    
   }
 
@@ -144,18 +30,49 @@ contract LocalKorner is Ownership {
   mapping(address => uint) customerId;
   //counts orders for free pizza
   mapping(address => uint) orderCount;
+  //is msg.sender owner
+  mapping(address => bool) isOwner;
+  //owners approvals
+  mapping(address => bool) accessApproved;
+  //request sender grant access
+  mapping(address => bool) canAccess;
 
   event OrderSent(uint orderId, address customer, string message);
   event FreePizza(uint orderId, address customer, string message);
+  event KornerOwnership(address owner, string message);
+  event UltimateOwnership(address ultimateOwner, string message);
 
   address[] private owners;
-  OwnerAccessRequest[] private requests;
   Pizza[] private pizzas;
   Order[] private orders;
 
+  modifier onlyOwner {
+      require(owner == msg.sender || isOwner[msg.sender], "not owner");
+      _;
+   }
+
+  modifier dontUse {
+    require(owners.length >= 2 && isActivated == false, "don't use");
+    _;
+  } 
+
+  modifier ultimateActivated {
+     if(isActivated == true){
+       require(msg.sender == ultimateOwner,
+        "only one owner");
+        _;
+     }else{
+       _;
+     }
+   }
+
+  modifier multiOwner {
+    require(owners.length == 1 || msg.sender == ultimateOwner,"get access from owners");
+      _;
+    }
 
    modifier preventDoubleReg {
-     require(!isRegistered[msg.sender], "Registered!");
+     require(!isRegistered[msg.sender], "registered");
      _;
    }
 
@@ -166,11 +83,35 @@ contract LocalKorner is Ownership {
  
     constructor() {
 
+
     owner = msg.sender;
     owners.push(msg.sender);
     
-    emit KornerOwnership(owner, "Welcome boss.");
+    emit KornerOwnership(owner, "welcome boss");
   }
+
+  function setUltimateOwnership(address _ultimateOwner) external onlyOwner multiOwner dontUse {
+      require(_ultimateOwner != address(0), "can't be zero address");
+      ultimateOwner = _ultimateOwner;
+      delete owners;
+      owners.push(_ultimateOwner);
+      isActivated = true;
+
+      emit UltimateOwnership(ultimateOwner, "is now the owner"); 
+    }
+
+  function addOwnership(address _newOwner) external onlyOwner multiOwner ultimateActivated {
+      require(_newOwner != address(0), "can't be zero address");
+      owners.push(_newOwner);
+      isOwner[_newOwner] = true;
+    }
+
+  function removeOwnership(address _oldOwner, uint _slotNumber) external onlyOwner multiOwner ultimateActivated{
+      require(_oldOwner != address(0), "can't be zero address");
+      owners[_slotNumber] = owners[owners.length - 1];
+      owners.pop();
+      isOwner[_oldOwner] = false;
+     }
 
     function _setPrice(uint256 _pizzaPrice) external onlyOwner multiOwner ultimateActivated {       
       if(owners.length == 1 || msg.sender == ultimateOwner){     
@@ -191,12 +132,12 @@ contract LocalKorner is Ownership {
       }
 
     function getMyRegId() external view returns(uint) {
-      require(isRegistered[msg.sender], "Register first.");
+      require(isRegistered[msg.sender], "register first");
       return customerId[msg.sender];
     }
 
-    function createPizza(string memory _pizzaName, uint _pizzaId) external onlyOwner multiOwner ultimateActivated {
-        pizzas.push(Pizza(_pizzaName, _pizzaId));
+    function createPizza(uint _pizzaId, string memory _pizzaName) external onlyOwner multiOwner ultimateActivated {
+        pizzas.push(Pizza(_pizzaId, _pizzaName));
     }
 
     function deletePizza(uint whichSlotToDelete) external onlyOwner multiOwner ultimateActivated{
@@ -220,62 +161,58 @@ contract LocalKorner is Ownership {
 
     function _freePizza() private {
         if (orderCount[msg.sender] == 5) {
-        require(msg.value == 0, "Don't pay.");
+        require(msg.value == 0, "don't pay");
         _orderSent();
-        emit FreePizza(block.timestamp, msg.sender, "Order sent!");
+        emit FreePizza(block.timestamp, msg.sender, "order sent");
      }
     }
 
-    function createOrder(string memory _pizzaName, uint _amount) external {
-        require(isRegistered[msg.sender], "Register first.");
-        //require(pizzaNameHasId, "Please select an existing pizzaname."); 
-        require(_amount > 0, "No 0 amount.");
-        require(_amount <= 10, "Order less than 10");
+    function createOrder(uint _pizzaId, uint _amount) external {
+        require(isRegistered[msg.sender], "register first");
+        require(keccak256(abi.encode(_pizzaId)) == keccak256(abi.encode(pizzas)), "invalid order"); 
+        require(_amount > 0, "no 0 amount");
+        require(_amount <= 10, "order less than 10");  
 
-        //if anyone knows the solution pls DM me  
-        //require(keccak256(abi.encode(_pizzaName)) == keccak256(abi.encode(pizzas)), "Please write a valid pizzaname.");
-
-          myPizzaOrder[msg.sender].push(Order(_pizzaName, _amount));
+          myPizzaOrder[msg.sender].push(Order(_pizzaId, _amount));
           orderAmount[msg.sender] += (_amount);
             
     }
 
-    function checkMyOrder() external view returns(Order[] memory _pizzaName, uint _amount, uint _amountToPay) {
-      require(orderAmount[msg.sender] > 0 , "Order first.");
+    function checkMyOrder() external view returns(Order[] memory _pizzaId, uint _amount, uint _amountToPay) {
+      require(orderAmount[msg.sender] > 0 , "order first");
 
-        _pizzaName = myPizzaOrder[msg.sender];
+        _pizzaId = myPizzaOrder[msg.sender];
         _amount = orderAmount[msg.sender];
         _amountToPay = orderAmount[msg.sender] * pizzaPrice;
 
-        return(_pizzaName, _amount, _amountToPay);
+        return(_pizzaId, _amount, _amountToPay);
         }
     
     function deleteMyPizzaOrder() external {
-      require(orderAmount[msg.sender] > 0 , "Order first.");        
+      require(orderAmount[msg.sender] > 0 , "order first");        
         delete myPizzaOrder[msg.sender];
         orderAmount[msg.sender] = 0;
     }
 
     function payForPizza() external freePizza payable returns (bool pizzaIsPayed) {
-      require(orderAmount[msg.sender] > 0, "No order yet!");
+      require(orderAmount[msg.sender] > 0, "no order yet");
 
       if (isActivated == false && (msg.sender == owner || isOwner[msg.sender])) {
         _orderSent();
 
-        emit OrderSent(block.timestamp, msg.sender, "Order sent!");
+        emit OrderSent(block.timestamp, msg.sender, "order sent");
         return !pizzaPayed;
       }
       else {
-        require(msg.value == orderAmount[msg.sender] * pizzaPrice, "Incorrect amount!");
+        require(msg.value == orderAmount[msg.sender] * pizzaPrice, "incorrect amount");
         delete myPizzaOrder[msg.sender];
         orderAmount[msg.sender] = 0;
 
-        emit OrderSent(block.timestamp, msg.sender, "Order sent!");
+        emit OrderSent(block.timestamp, msg.sender, "order sent");
 
         orderCount[msg.sender]++;
         return !pizzaPayed;
       }
- 
     }
     
     function getContractBalance() external view onlyOwner multiOwner ultimateActivated returns (uint) {
