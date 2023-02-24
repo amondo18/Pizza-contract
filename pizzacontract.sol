@@ -122,7 +122,8 @@ contract LocalKorner {
       }
     }
 
-    function getPizzaPrice() external view returns(uint _pizzaPrice) {
+    function getPizzaPrice() external view returns(uint) {
+      return pizzaPrice;
     }
 
     function setMyRegId() external preventDoubleReg {
@@ -169,9 +170,10 @@ contract LocalKorner {
 
     function createOrder(uint _pizzaId, uint _amount) external {
         require(isRegistered[msg.sender], "register first");
-        require(keccak256(abi.encode(_pizzaId)) == keccak256(abi.encode(pizzas)), "invalid order"); 
+        //require(keccak256(abi.encode(_pizzaId)) == keccak256(abi.encode(pizzas)), "invalid order"); 
         require(_amount > 0, "no 0 amount");
-        require(_amount <= 10, "order less than 10");  
+        require(_amount <= 10, "order less than 10");
+        //require(pizzas[_pizzaId].pizzaId == _pizzaId, "invalid pizza ID"); 
 
           myPizzaOrder[msg.sender].push(Order(_pizzaId, _amount));
           orderAmount[msg.sender] += (_amount);
