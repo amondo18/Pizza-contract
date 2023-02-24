@@ -17,25 +17,19 @@ contract LocalKorner {
   
   struct Order{
     uint pizzaId;
+    string pizzaName;
     uint pizzaAmount;    
   }
 
-  //msg.sender to ordered pizzas;
-  mapping(address => Order[]) myPizzaOrder;
-  //counts the customers order amount
-  mapping(address => uint) orderAmount;
-  //is address registered
-  mapping(address => bool) isRegistered;
-  //gives an ID to a customer
-  mapping(address => uint) customerId;
-  //counts orders for free pizza
-  mapping(address => uint) orderCount;
-  //is msg.sender owner
-  mapping(address => bool) isOwner;
-  //owners approvals
-  mapping(address => bool) accessApproved;
-  //request sender grant access
-  mapping(address => bool) canAccess;
+  //mapping(uint => string) idToPizza;         //connects id with pizzaname
+  mapping(address => Order[]) myPizzaOrder;  //msg.sender to orders
+  mapping(address => uint) orderAmount;      //counts the customers order amount
+  mapping(address => bool) isRegistered;     //is address registered
+  mapping(address => uint) customerId;       //gives an ID to a customer
+  mapping(address => uint) orderCount;       //counts orders for free pizza 
+  mapping(address => bool) isOwner;          //is msg.sender owner 
+  //mapping(address => bool) accessApproved;   //owners approvals  
+  //mapping(address => bool) canAccess;        //requests sender grant access
 
   event OrderSent(uint orderId, address customer, string message);
   event FreePizza(uint orderId, address customer, string message);
@@ -139,6 +133,7 @@ contract LocalKorner {
 
     function createPizza(uint _pizzaId, string memory _pizzaName) external onlyOwner multiOwner ultimateActivated {
         pizzas.push(Pizza(_pizzaId, _pizzaName));
+        //idToPizza[_pizzaId] = _pizzaName;
     }
 
     function deletePizza(uint whichSlotToDelete) external onlyOwner multiOwner ultimateActivated{
@@ -168,26 +163,24 @@ contract LocalKorner {
      }
     }
 
-    function createOrder(uint _pizzaId, uint _amount) external {
+    function createOrder(uint _pizzaId, string memory _pizzaName, uint _amount) external {
         require(isRegistered[msg.sender], "register first");
         //require(keccak256(abi.encode(_pizzaId)) == keccak256(abi.encode(pizzas)), "invalid order"); 
         require(_amount > 0, "no 0 amount");
         require(_amount <= 10, "order less than 10");
-        //require(pizzas[_pizzaId].pizzaId == _pizzaId, "invalid pizza ID"); 
 
-          myPizzaOrder[msg.sender].push(Order(_pizzaId, _amount));
+          myPizzaOrder[msg.sender].push(Order(_pizzaId, _pizzaName, _amount));
           orderAmount[msg.sender] += (_amount);
             
     }
 
-    function checkMyOrder() external view returns(Order[] memory _pizzaId, uint _amount, uint _amountToPay) {
+    function checkMyOrder() external view returns(Order[] memory _myOrder,  uint _amountToPay) {
       require(orderAmount[msg.sender] > 0 , "order first");
 
-        _pizzaId = myPizzaOrder[msg.sender];
-        _amount = orderAmount[msg.sender];
+        _myOrder = myPizzaOrder[msg.sender];
         _amountToPay = orderAmount[msg.sender] * pizzaPrice;
-
-        return(_pizzaId, _amount, _amountToPay);
+        
+        return(_myOrder,  _amountToPay);
         }
     
     function deleteMyPizzaOrder() external {
