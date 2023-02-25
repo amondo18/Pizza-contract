@@ -21,13 +21,15 @@ contract LocalKorner {
     uint pizzaAmount;    
   }
 
-  //mapping(uint => string) idToPizza;         //connects id with pizzaname
-  mapping(address => Order[]) myPizzaOrder;  //msg.sender to orders
-  mapping(address => uint) orderAmount;      //counts the customers order amount
-  mapping(address => bool) isRegistered;     //is address registered
-  mapping(address => uint) customerId;       //gives an ID to a customer
-  mapping(address => uint) orderCount;       //counts orders for free pizza 
-  mapping(address => bool) isOwner;          //is msg.sender owner 
+  mapping (string => bool) pizzaNameExists;    //maps existing pizzaNames
+  mapping(uint => bool) pizzaIdExists;         //maps the existing ids
+  mapping(uint => string) pizzaNames;          //connects id with pizzaname
+  mapping(address => Order[]) myPizzaOrder;    //msg.sender to orders
+  mapping(address => uint) orderAmount;        //counts the customers order amount
+  mapping(address => bool) isRegistered;       //is address registered
+  mapping(address => uint) customerId;         //gives an ID to a customer
+  mapping(address => uint) orderCount;         //counts orders for free pizza 
+  mapping(address => bool) isOwner;            //is msg.sender owner 
   //mapping(address => bool) accessApproved;   //owners approvals  
   //mapping(address => bool) canAccess;        //requests sender grant access
 
@@ -132,8 +134,13 @@ contract LocalKorner {
     }
 
     function createPizza(uint _pizzaId, string memory _pizzaName) external onlyOwner multiOwner ultimateActivated {
-        pizzas.push(Pizza(_pizzaId, _pizzaName));
-        //idToPizza[_pizzaId] = _pizzaName;
+      require(!pizzaIdExists[_pizzaId], "id already exists");
+      require(!pizzaNameExists[_pizzaName], "pizzaName already exists");
+
+      pizzas.push(Pizza(_pizzaId, _pizzaName));
+      pizzaIdExists[_pizzaId] = true;
+      pizzaNameExists[_pizzaName] = true;
+      pizzaNames[_pizzaId] = _pizzaName;
     }
 
     function deletePizza(uint whichSlotToDelete) external onlyOwner multiOwner ultimateActivated{
@@ -165,7 +172,8 @@ contract LocalKorner {
 
     function createOrder(uint _pizzaId, string memory _pizzaName, uint _amount) external {
         require(isRegistered[msg.sender], "register first");
-        //require(keccak256(abi.encode(_pizzaId)) == keccak256(abi.encode(pizzas)), "invalid order"); 
+        require(pizzaIdExists[_pizzaId], "id does not exist");
+        require(keccak256(abi.encode(_pizzaName)) == keccak256(abi.encode(pizzaNames[_pizzaId])), "pizza name does not match id"); 
         require(_amount > 0, "no 0 amount");
         require(_amount <= 10, "order less than 10");
 
